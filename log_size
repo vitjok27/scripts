@@ -1,0 +1,64 @@
+#!/bin/bash
+
+#To check size of logs for all apps
+#totalsizesum=0
+
+echo "==================================================== `date` ===================================================="
+
+
+for env in prod release stage ; do
+#for env in $1 ; do
+totalsizesum=0
+ for app in rc rips vehicle fleet ds clientservice shed acc location payments mgk cis impressions ; do
+   sizesum=0; 
+   for i in `knife search node "role:*awscurb*app*$app* AND chef_environment:$env" -a fqdn | grep fqdn | cut -d : -f 2`;  do 
+    if [ $env == 'prod' ] 
+    then
+      size=`ssh -o 'StrictHostKeyChecking no' $i "ls -l /u/apps/$app/current/log/production.log | tr -s ' ' | cut -d ' ' -f5" 2> /dev/null`
+    else
+      size=`ssh -o 'StrictHostKeyChecking no' $i "ls -l /u/apps/$app/current/log/${env}.log | tr -s ' ' | cut -d ' ' -f5" 2> /dev/null`
+    fi
+      sizesum=`expr $sizesum + $size`
+   done
+   echo "Total $app size:" 
+   echo $sizesum
+   totalsizesum=`expr $totalsizesum + $sizesum`
+ done
+
+ echo "All $env apps total size in Bytes:"
+ echo $totalsizesum
+
+ echo "All $env apps total size in MB:"
+ fullsize=`echo $(($totalsizesum / 1048576 ))`
+ echo $fullsize
+
+ echo "Estimate $env apps logs size for 30 days in GB:"
+ fullsizeGB=`echo $((($fullsize * 30) / 1024 ))`
+ echo $fullsizeGB
+echo "----------------------------------------------------------------------------------------------------------------"
+done
+
+
+echo "==================================================== `date` ===================================================="
+
+#To check size of rips logs
+#app=rips
+#sizesum=0;
+#for i in `knife search node "role:*awscurb*app*$app* AND chef_environment:prod" -a fqdn | grep fqdn | cut -d : -f 2`
+#   do size=`ssh -o 'StrictHostKeyChecking no' $i "ls -l /u/apps/$app/current/log/production.log | tr -s ' ' | cut -d ' ' -f5"`
+#   sizesum=`expr $sizesum + $size`
+##   echo $sizesum
+#done
+#echo "Total $app size:"
+#echo $sizesum
+#
+##To check size of vehicle logs
+#app=vehicle
+#sizesum=0;
+#for i in `knife search node "role:*awscurb*app*$app* AND chef_environment:prod" -a fqdn | grep fqdn | cut -d : -f 2`
+#   do size=`ssh -o 'StrictHostKeyChecking no' $i "ls -l /u/apps/$app/current/log/production.log | tr -s ' ' | cut -d ' ' -f5"`
+#   sizesum=`expr $sizesum + $size`
+##   echo $sizesum
+#done
+#echo "Total $app size:"
+#echo $sizesum
