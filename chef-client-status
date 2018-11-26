@@ -1,0 +1,41 @@
+#!/bin/bash
+
+#export CHEF_SSL_VERIFY=false
+
+#mail_server="192.168.5.248"
+mail_server="nyvmssmtp.nymedia.verifonets.com"
+sender="chef@gocurb.com"
+#sender="netsupport@gocurb.com"
+recipient="netsupport@gocurb.com"
+#recipient="vadymk@gocurb.com"
+path_to_chef_repo="/root/chef-repo"
+
+get_status_of_servers () {
+  cd $path_to_chef_repo
+  knife status | while read line; do
+    hostname=`echo "$line" | tr -d " " | cut -d "," -f2 | cut -d "." -f1`
+    if [[ `echo $line | grep minut` != "" ]]; then
+      echo -e "chef-client is <b style=\"color:green;\">RUNNING</b> - $hostname<br>"
+    else
+      echo -e "chef-client is <b style=\"color:red;\">NOT RUNNING</b> - $hostname<br>"
+    fi
+  done
+}
+
+mail_message () {
+  echo "HELO $mail_server"
+  echo "MAIL FROM:$sender"
+  echo "RCPT TO:$recipient"
+  echo "DATA"
+  echo "To: $recipient"
+  echo "From: $sender"
+  echo "Subject: NYMedia - Status of chef clients on the servers"
+  echo "MIME-Version: 1.0"
+  echo "Content-Type: text/html; charset=utf-8"
+  echo "Status of chef clients on the servers:<br><br>"
+  get_status_of_servers
+  echo "."
+  echo "close"
+}
+
+mail_message | nc -C $mail_server 25
